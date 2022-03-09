@@ -1,4 +1,5 @@
 const { ApolloServer, gql } = require('apollo-server')
+const { v1: uuid } = require('uuid')
 
 let authors = [
   {
@@ -108,6 +109,14 @@ const typeDefs = gql`
       allBooks(author: String, genre: String): [Book!]!
       allAuthors: [Author!]!
   }
+  type Mutation {
+    addBook(
+      title: String!
+      author: String!
+      published: Int!
+      genres: [String!]!
+    ): Book
+  }
 `
 
 const resolvers = {
@@ -115,7 +124,8 @@ const resolvers = {
       bookCount: () => books.length,
       authorCount: () => authors.length,
       allBooks: (root, args) => {
-          return books.filter(b => args.author ? (b.author === args.author) : 1)
+          return books
+            .filter(b => args.author ? (b.author === args.author) : 1)
             .filter(b => args.genre ? b.genres.includes(args.genre) : 1)
       },
       allAuthors: () => authors
@@ -124,6 +134,19 @@ const resolvers = {
       bookCount: (root) => {
           return books.filter(b => b.author == root.name).length
       }
+  },
+  Mutation: {
+    addBook: (root, args) => {
+      console.log("käynnistetään mutaatio")
+      const book = { ...args, id: uuid() }
+      books = books.concat(book)
+      if (!authors.find(a => a.name === book.author)) {
+        console.log("kirjailijaa ei löytynyt")
+        const newAuthor = {name: book.author, id: uuid() }  
+        authors.push(newAuthor)
+      }
+      return book
+    }
   }
 }
 
